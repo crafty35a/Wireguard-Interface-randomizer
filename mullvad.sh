@@ -28,32 +28,45 @@ checkMullvadConnectivity() {
 # Extract the wireguard configuration list that is available in /etc/wireguard
 newWireguardConfigurationList=$(sudo ls $wireguardConfigurationDirectory | grep --word-regexp "$mullvadVpnInterfaceRegex")
 
-# Pick a wireguard interface at random to connect to next
-newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)
-
 # Satisfies this condition if a connected interface was found.
 #if [[ -n "$connectedWireguardConfiguration" ]]; then
-	
 
 echo "" # Blank space for formatting
 echo "Cron is re-configuring the connected VPN."
-lastConnectedInterface=$(<lastconnected)
-echo "Last connected interface: " $lastConnectedInterface
-echo "Switching over to $newWireguardConfiguration"
 
-sudo rm lastconnected
-sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf
 
-sudo mv /etc/wireguard/"$newWireguardConfiguration".conf /etc/wireguard/wg0.conf
+
+
+if test -f [ ! -f /etc/wireguard/wg0.conf ]
+then
+	echo "wg0.conf doesn't exist yet (first time run)"
+	# Pick a wireguard interface dat random to connect to next
+	newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)
+	
+	sudo mv /etc/wireguard/"$newWireguardConfiguration" /etc/wireguard/wg0.conf
+	echo "$newWireguardConfiguration" > lastconnected
+	
+else
+	echo "wg0.conf already exists"
+	# Pick a wireguard interface dat random to connect to next
+	newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)	
+	lastConnectedInterface=$(<lastconnected)
+	
+	sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf
+	sudo mv /etc/wireguard/"$newWireguardConfiguration" /etc/wireguard/wg0.conf
+	
+	echo "$newWireguardConfiguration" > lastconnected
+	    
+fi
+
+# lastConnectedInterface=$(<lastconnected)
+# echo "Last connected interface: " $lastConnectedInterface
+# echo "Switching over to $newWireguardConfiguration"
+
+# sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf
+# sudo mv /etc/wireguard/"$newWireguardConfiguration" /etc/wireguard/wg0.conf
 
 echo "Disconnecting from WireGuard (if tunnel was up"
-sudo wg-quick down wg0 2> /dev/null
+sudo wg-quick down wg0 #2> /dev/null
 echo "Reconnecting to new WireGuard server"
-sudo wg-quick up wg0 2> /dev/null
-
-echo "$newWireguardConfiguration" > lastconnected
-
-# Satisfies this condition if a connected interface was not found.
-#elif [[ -z "$connectedWireguardConfiguration" ]]; then
-	
-#fi
+sudo wg-quick up wg0 #2> /dev/null
