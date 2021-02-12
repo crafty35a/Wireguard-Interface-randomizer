@@ -20,7 +20,7 @@ checkMullvadConnectivity() {
 	return 0
 }
 
-checkMullvadConnectivity "$mullvadVpnInterfaceRegex"
+#checkMullvadConnectivity "$mullvadVpnInterfaceRegex"
 
 # Debug log
 # echo " ip addr command returned $connectedWireguardConfiguration"
@@ -32,28 +32,28 @@ newWireguardConfigurationList=$(sudo ls $wireguardConfigurationDirectory | grep 
 newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)
 
 # Satisfies this condition if a connected interface was found.
-if [[ -n "$connectedWireguardConfiguration" ]]; then
+#if [[ -n "$connectedWireguardConfiguration" ]]; then
 	
-	echo "" # Blank space for formatting
-	echo "Cron is re-configuring the connected VPN."
-	echo "System is currently connected to $connectedWireguardConfiguration and switching over to $newWireguardConfiguration"
-	
-	lastConnectedInterface=$(<lastconnected)
-	echo "Last connected interface: " $lastConnectedInterface
-	sudo rm lastconnected
-	sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf
-	
-	sudo mv /etc/wireguard/"$newWireguardConfiguration".conf /etc/wireguard/wg0.conf
 
-	sudo wg-quick down wg0 2> /dev/null
-	sudo wg-quick up wg0 2> /dev/null
+echo "" # Blank space for formatting
+echo "Cron is re-configuring the connected VPN."
+lastConnectedInterface=$(<lastconnected)
+echo "Last connected interface: " $lastConnectedInterface
+echo "Switching over to $newWireguardConfiguration"
+
+sudo rm lastconnected
+sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf
+
+sudo mv /etc/wireguard/"$newWireguardConfiguration".conf /etc/wireguard/wg0.conf
+
+echo "Disconnecting from WireGuard (if tunnel was up"
+sudo wg-quick down wg0 2> /dev/null
+echo "Reconnecting to new WireGuard server"
+sudo wg-quick up wg0 2> /dev/null
+
+echo "$newWireguardConfiguration" > lastconnected
 
 # Satisfies this condition if a connected interface was not found.
-elif [[ -z "$connectedWireguardConfiguration" ]]; then
+#elif [[ -z "$connectedWireguardConfiguration" ]]; then
 	
-	echo "" # Blank space for formatting
-	echo "Cron is configuring a VPN now."
-	echo "System will attempt to connect to $newWireguardConfiguration"
-
-	sudo wg-quick up $wireguardConfigurationDirectory$newWireguardConfiguration 2> /dev/null
-fi
+#fi
