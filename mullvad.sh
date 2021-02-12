@@ -31,42 +31,48 @@ connectedWireguardConfiguration=""
 newWireguardConfigurationList=$(sudo ls $wireguardConfigurationDirectory | grep --word-regexp "$mullvadVpnInterfaceRegex")
 
 printf "" # Blank space for formatting
-printf "Randomizing the Mullvad VPN Connection..."
+printf "==Randomizing the Mullvad VPN Connection==\r\n"
 
 #Check if wg0.conf exists
 if sudo [ ! -f /etc/wireguard/wg0.conf ]
 then
-        printf "wg0.conf doesn't exist yet (first time run)\n"
-	
+        printf "\nwg0.conf doesn't exist yet (first time run)"
+
         # Pick a wireguard interface at random to connect to next
         newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)
 
-	# Rename randomly selected server to wg0
+        # Rename randomly selected server to wg0
         sudo mv /etc/wireguard/"$newWireguardConfiguration" /etc/wireguard/wg0.conf
-	
-	# Write selected server name to lastServer.txt
-	printf "$newWireguardConfiguration" | sudo tee lastServer.txt  # add -a for append (>>)
+
+        # Write selected server name to lastServer.txt
+        printf "\nWriting previous server to lastServer.txt: "
+        printf "$newWireguardConfiguration" | sudo tee lastServer.txt  # add -a for append (>>)
 
 else
-        sudo printf "wg0.conf already exists"
-	
+        printf "\nwg0.conf already exists"
+
         # Pick a wireguard interface at random to connect to next
         newWireguardConfiguration=$(shuf -n 1 -e $newWireguardConfigurationList)
-	
-	# Read last connected server from lastServer.txt
+
+        # Read last connected server from lastServer.txt
         lastConnectedInterface=$(<lastServer.txt)
 
-	# Rename wg0.conf (last connected server) back to actual server name
-        sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface".conf	
-	# Rename randomly selected server to wg0.conf
+        # Rename wg0.conf (last connected server) back to actual server name
+        sudo mv /etc/wireguard/wg0.conf /etc/wireguard/"$lastConnectedInterface"
+        # Rename randomly selected server to wg0.conf
         sudo mv /etc/wireguard/"$newWireguardConfiguration" /etc/wireguard/wg0.conf
 
-	# Write selected server name to lastServer.txt
-	printf "$newWireguardConfiguration" | sudo tee lastServer.txt  # add -a for append (>>)
+        # Write selected server name to lastServer.txt
+        printf "\nWriting previous server to lastServer.txt: "
+        printf "$newWireguardConfiguration" | sudo tee lastServer.txt  # add -a for append (>>)
 
 fi
 
-printf "Disconnecting from WireGuard (if tunnel was up)\n"
-sudo wg-quick down wg0 #2> /dev/null
-printf "Reconnecting to new WireGuard server\n"
+if sudo [ -e /sys/class/net/wg0 ]
+then
+        printf "\n\nDisconnecting from Mullvad\r\n\r\n"
+        sudo wg-quick down wg0 #2> /dev/null
+fi
+
+printf "\nReconnecting to new Mullvad server\r\n\r\n"
 sudo wg-quick up wg0 #2> /dev/null
